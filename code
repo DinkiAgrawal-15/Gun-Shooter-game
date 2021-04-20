@@ -1,0 +1,172 @@
+var gunLoaded=true;
+var enemiesMovingLeft=false;
+var gameStarted=false;
+var enemiesRemaining=4;
+var startTime;
+var elapsedTime;
+
+onEvent("screen_game", "keydown", function(event) {
+  var shipX=getXPosition("image_ship");
+  var shipY=getYPosition("image_ship");
+  var distance=15;
+  if(event.key=="Up")
+  {
+    shipY=shipY-distance;
+  }
+  if(event.key=="Down")
+  {
+    
+    shipY = shipY+distance;
+  }
+  if(event.key=="Enter"){
+    fire();
+  }
+  setPosition("image_ship",shipX,shipY);
+  verticalWrapAround("image_ship");
+  
+});
+function verticalWrapAround(object){
+  var objectX=getXPosition(object);
+  var objectY=getYPosition(object);
+  var objectHeight=getProperty(object,"height");
+  if(objectY < 0-(objectHeight/2))
+  {
+    objectY=450-(objectHeight/2);
+    
+  }
+  else if(objectY>450-(objectHeight /2)){
+    objectY=0-(objectHeight /2);
+  }
+  setPosition(object,objectX,objectY);
+}
+
+function fire()
+{
+  if(gunLoaded)
+  {
+    gunLoaded=false;
+    
+    var shipX=getXPosition("image_ship");
+  var shipY=getYPosition("image_ship");
+  var shipHeight=getProperty("image_ship","height");
+  var shipWidth=getProperty("image_ship","width");
+  var energyBoltHeight=getProperty("image_energy","height");
+  
+  var energyBoltx=shipX+shipWidth;
+  var energyBolty=shipY+(shipHeight/2)-(energyBoltHeight/2);
+  setPosition("image_energy",energyBoltx,energyBolty);
+    
+    
+  }
+}
+onEvent("button_start", "click", function(event) {
+  if(!gameStarted)
+  {
+    gameStarted=true;
+    setPosition("button_start",100,500);
+    startTime=getTime();
+    setPosition("image_energy",400,100);
+    
+   timedLoop(50, function() {
+     updateTime();
+     moveEnergyBolt();
+     
+     moveEnemy("image_enemy_one");
+     moveEnemy("image_enemy_two");
+     moveEnemy("image_enemy_3");
+     moveEnemy("image_enemy_4");
+     collisionDetection("image_enemy_one");
+     collisionDetection("image_enemy_two");
+     collisionDetection("image_enemy_3");
+     collisionDetection("image_enemy_4");
+
+     
+
+    }); 
+  }
+});
+function updateTime()
+{
+  var currentTime=getTime();
+  elapsedTime=currentTime-startTime;
+  elapsedTime=(elapsedTime/1000).toFixed(1);
+  setNumber("label_time",elapsedTime)
+}
+    
+ function moveEnergyBolt()
+ {
+   var energyBoltx=getXPosition("image_energy");
+   var energyBolty=getYPosition("image_energy");
+   var energyBoltSpeed=energyBoltx/10;
+   
+   energyBoltx=energyBoltx+energyBoltSpeed;
+   setPosition("image_energy",energyBoltx,energyBolty);
+   
+   if(energyBoltx>800)
+     gunLoaded=true;
+   
+ }
+function moveEnemy(name)
+{
+  var enemyX=getXPosition(name);
+  var enemyY=getYPosition(name);
+  
+  var minX=103;
+  var maxX=280;
+  
+  var distanceFromMax=maxX-enemyX;
+  var verticalSpeed=(distanceFromMax/9)+20;
+  var horizontalSpeed=Math.min((elapsedTime/2),16);
+  
+  enemyY=enemyY+verticalSpeed;
+  
+  if(enemyX>maxX)
+   enemiesMovingLeft=true;
+   
+  if(enemyX<minX)
+   enemiesMovingLeft=false;
+   
+  if(enemiesMovingLeft)//enemies movingleft==true
+    enemyX=enemyX-horizontalSpeed;
+    
+  else
+    enemyX=enemyX+horizontalSpeed;
+    
+  setPosition(name,enemyX,enemyY);
+  
+  verticalWrapAround(name);
+   
+}
+function collisionDetection(object)
+{
+  var energy_boltX=getXPosition("image_energy");
+  var energy_boltY=getYPosition("image_energy");
+  var objectX=getXPosition(object);
+  var objectY=getYPosition(object);
+  
+  
+  var energy_bolt_width=getProperty("image_energy","width");
+  var energy_bolt_height=getProperty("image_energy","height");
+  var objectWidth=getProperty(object,"width");
+  var objectHeight=getProperty(object,"height");
+  
+  if(energy_boltX + energy_bolt_width >=objectX && energy_boltX<=objectX + objectWidth)
+  {
+    if(energy_boltY +energy_bolt_height >= objectY &&energy_boltY<=objectY +objectHeight)
+    {
+      if(!getProperty(object,"hidden"))
+      {
+        hideElement(object);
+        enemiesRemaining--;
+        
+        if(enemiesRemaining<=0)
+        {
+          stopTimedLoop();
+          hideElement("image_energy");
+        }
+      }
+    }
+  }
+  
+
+}
